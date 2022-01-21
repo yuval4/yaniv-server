@@ -3,7 +3,7 @@ const { xor } = require("lodash");
 
 class GameManager {
     constructor(maxPlayers) {
-        this.deck = cardsToNumber;
+        this.deck = new Map(cardsToNumber);
         this.maxPlayers = maxPlayers;
         this.playersAmount = 0;
         this.pile = [];
@@ -80,7 +80,7 @@ class GameManager {
     }
 
     reset() {
-        this.deck = cardsToNumber;
+        this.deck = new Map(cardsToNumber);
         this.playersAmount = 0;
         this.pile = [];
         this.topPile = [];
