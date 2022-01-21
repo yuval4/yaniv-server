@@ -4,6 +4,7 @@ const { Server } = require("socket.io");
 const { GameManager } = require("./gameManager");
 
 const app = express();
+const PORT = process.env.PORT || 3000;
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
     cors: {
@@ -35,7 +36,9 @@ io.on("connection", (socket) => {
     }
 });
 
-httpServer.listen(3000);
+httpServer.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
+});
 
 const onDisconnect = (socket) => {
     socket.on("disconnect", (reason) => {
