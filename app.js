@@ -35,7 +35,7 @@ io.on("connection", (socket) => {
     }
 });
 
-httpServer.listen(80);
+httpServer.listen(3000);
 
 const onDisconnect = (socket) => {
     socket.on("disconnect", (reason) => {
