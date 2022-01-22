@@ -114,7 +114,23 @@ const onGetPlayersName = (socket) => {
 };
 
 const onYaniv = (socket) => {
-    console.log("To Be Implemented");
+    socket.on("onYaniv", (id) => {
+        if (gameManager.calcHandSum(id) <= 7) {
+            const minScorePlayer = gameManager.getMinHandScorePlayer();
+
+            if (id === minScorePlayer.id) {
+                socket.emit("onPlayerWin", {
+                    winner: minScorePlayer,
+                    state: gameManager.players,
+                });
+            } else {
+                socket.emit("onAsaf", {
+                    winner: minScorePlayer,
+                    state: gameManager.players,
+                });
+            }
+        }
+    });
 };
 
 const validateDepositedCards = (cards) => {

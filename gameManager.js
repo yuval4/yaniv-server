@@ -95,6 +95,22 @@ class GameManager {
 
         return keys[key];
     }
+
+    calcHandSum(playerId) {
+        return this.getPlayer(playerId).hand.reduce(
+            (total, id) => total + cardsToNumber.get(id),
+            0
+        );
+    }
+
+    getMinHandScorePlayer() {
+        return this.players.reduce((prevPlayer, currPlayer) => {
+            return this.calcHandSum(prevPlayer.id) <
+                this.calcHandSum(currPlayer.id) ?
+                prevPlayer :
+                currPlayer;
+        });
+    }
 }
 
 module.exports = { GameManager };
