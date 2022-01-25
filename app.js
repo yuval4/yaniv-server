@@ -102,6 +102,7 @@ const onCardTakeFromDeck = (socket) => {
             pile: gameManager.pile,
             topPile: gameManager.topPile,
         });
+
         io.emit("onPlayersStateChange", gameManager.getPlayersState());
         changePlayerTurn();
     });
@@ -119,12 +120,12 @@ const onYaniv = (socket) => {
             const minScorePlayer = gameManager.getMinHandScorePlayer();
 
             if (id === minScorePlayer.id) {
-                socket.emit("onPlayerWin", {
+                io.emit("onPlayerWin", {
                     winner: minScorePlayer,
                     state: gameManager.players,
                 });
             } else {
-                socket.emit("onAsaf", {
+                io.emit("onAsaf", {
                     winner: minScorePlayer,
                     state: gameManager.players,
                 });
