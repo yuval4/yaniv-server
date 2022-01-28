@@ -13,34 +13,18 @@ const io = new Server(httpServer, {
 });
 
 const maxPlayers = 2;
-const gameManager = new GameManager(maxPlayers);
+const roomNameToGameManager = new Map();
+// const gameManager = new GameManager(maxPlayers);
 
 io.on("connection", (socket) => {
-    if (gameManager.playersAmount >= gameManager.maxPlayers) {
-        console.log("Room is full, client - ", socket.id, "disconnected");
-        socket.disconnect();
-    }
-
-    gameManager.addPlayer(socket);
-
-    onGetPlayersName(socket);
-    onDisconnect(socket);
-    onCardTakenFromPile(socket);
-    onCardTakeFromDeck(socket);
-    onYaniv(socket);
-
-    if (gameManager.playersAmount === gameManager.maxPlayers) {
-        setTimeout(() => {
-            onGameStart(socket);
-        }, 100);
-    }
+    onJoinRoom(socket);
 });
 
 httpServer.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 });
 
-const onDisconnect = (socket) => {
+const onDisconnect = (socket, roomName) => {
     socket.on("disconnect", (reason) => {
         socket.broadcast.emit("onClientDisconnect", socket.id);
         io.disconnectSockets();
@@ -48,7 +32,47 @@ const onDisconnect = (socket) => {
     });
 };
 
-const onGameStart = (socket) => {
+const onJoinRoom = (socket) => {
+    socket.on("onJoinRoom", (roomName) => {
+        const gameManager = roomNameToGameManager.get(roomName);
+
+        if (
+            gameManager &&
+            gameManager.playersAmount >= gameManager.maxPlayers
+        ) {
+            console.log("Room is full, client - ", socket.id, "disconnected");
+            socket.disconnect();
+        }
+
+        if (!gameManager) {
+            roomNameToGameManager.set(
+                roomName,
+                new GameManager(maxPlayers, roomName)
+            );
+            gameManager = roomNameToGameManager.get(roomName);
+        }
+
+        socket.join(roomName).then(() => {
+            gameManager.addPlayer(socket);
+
+            onGetPlayersName(socket);
+            onDisconnect(socket);
+            onCardTakenFromPile(socket);
+            onCardTakeFromDeck(socket);
+            onYaniv(socket);
+        });
+
+        if (gameManager.playersAmount === gameManager.maxPlayers) {
+            setTimeout(() => {
+                onGameStart(socket);
+            }, 100);
+        }
+    });
+};
+
+const onGameStart = (socket, roomName) => {
+    const gameManager = roomNameToGameManager.get(roomName);
+
     gameManager.initGame();
     gameManager.players.forEach((player) => {
         io.to(player.id).emit("onGameStart", player.hand);
@@ -62,14 +86,16 @@ const onGameStart = (socket) => {
         });
     });
 
-    changePlayerTurn();
+    changePlayerTurn(gameManager);
 };
 
-const onCardTakenFromPile = (socket) => {
+const onCardTakenFromPile = (socket, roomName) => {
     /*
     2. check if the player has this card, and the pile also has this card (else change turns).
   */
     socket.on("onCardTakenFromPile", ({ thrownCards, cardFromPile }) => {
+        const gameManager = roomNameToGameManager.get(roomName);
+
         if (!gameManager.isPlayerTurn(socket.id)) {
             return;
         }
@@ -77,20 +103,25 @@ const onCardTakenFromPile = (socket) => {
         gameManager.takeCardFromPile(socket.id, thrownCards, cardFromPile);
 
         socket.emit("onCardTaken", gameManager.getPlayer(socket.id).hand);
-        io.emit("onPileUpdate", {
+        io.to(roomName).emit("onPileUpdate", {
             pile: gameManager.pile,
             topPile: gameManager.topPile,
         });
-        io.emit("onPlayersStateChange", gameManager.getPlayersState());
-        changePlayerTurn();
+        io.to(roomName).emit(
+            "onPlayersStateChange",
+            gameManager.getPlayersState()
+        );
+        changePlayerTurn(gameManager);
     });
 };
 
-const onCardTakeFromDeck = (socket) => {
+const onCardTakeFromDeck = (socket, roomName) => {
     /*
     2. check if the player has this card, and the deck has cards in it (else change turns).
   */
     socket.on("onCardTakeFromDeck", (thrownCards) => {
+        const gameManager = roomNameToGameManager.get(roomName);
+
         if (!gameManager.isPlayerTurn(socket.id)) {
             return;
         }
@@ -98,34 +129,39 @@ const onCardTakeFromDeck = (socket) => {
         gameManager.takeCardFromDeck(socket.id, thrownCards);
 
         socket.emit("onCardTaken", gameManager.getPlayer(socket.id).hand);
-        io.emit("onPileUpdate", {
+        io.to(roomName).emit("onPileUpdate", {
             pile: gameManager.pile,
             topPile: gameManager.topPile,
         });
 
-        io.emit("onPlayersStateChange", gameManager.getPlayersState());
-        changePlayerTurn();
+        io.to(roomName).emit(
+            "onPlayersStateChange",
+            gameManager.getPlayersState()
+        );
+        changePlayerTurn(gameManager);
     });
 };
 
-const onGetPlayersName = (socket) => {
+const onGetPlayersName = (socket, roomName) => {
     socket.on("onGetPlayerName", (name) => {
-        gameManager.getPlayer(socket.id).name = name;
+        roomNameToGameManager.get(roomName).getPlayer(socket.id).name = name;
     });
 };
 
-const onYaniv = (socket) => {
+const onYaniv = (socket, roomName) => {
     socket.on("onYaniv", (id) => {
+        const gameManager = roomNameToGameManager.get(roomName);
+
         if (gameManager.calcHandSum(id) <= 7) {
             const minScorePlayer = gameManager.getMinHandScorePlayer();
 
             if (id === minScorePlayer.id) {
-                io.emit("onPlayerWin", {
+                io.to(roomName).emit("onPlayerWin", {
                     winner: minScorePlayer,
                     state: gameManager.players,
                 });
             } else {
-                io.emit("onAsaf", {
+                io.to(roomName).emit("onAsaf", {
                     winner: minScorePlayer,
                     state: gameManager.players,
                 });
@@ -134,11 +170,14 @@ const onYaniv = (socket) => {
     });
 };
 
-const validateDepositedCards = (cards) => {
+const validateDepositedCards = (cards, roomName) => {
     console.log("To Be Implemented");
 };
 
-const changePlayerTurn = () => {
+const changePlayerTurn = (gameManager) => {
     gameManager.changePlayerTurn();
-    io.emit("onTurnChanged", gameManager.currentPlayerTurn);
+    io.to(gameManager.roomName).emit(
+        "onTurnChanged",
+        gameManager.currentPlayerTurn
+    );
 };

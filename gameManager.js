@@ -2,7 +2,7 @@ const { cardsToNumber } = require("./utils");
 const { xor } = require("lodash");
 
 class GameManager {
-    constructor(maxPlayers) {
+    constructor(maxPlayers, roomName) {
         this.deck = new Map(cardsToNumber);
         this.maxPlayers = maxPlayers;
         this.playersAmount = 0;
@@ -10,6 +10,7 @@ class GameManager {
         this.topPile = [];
         this.players = [];
         this.currentPlayerTurn = "";
+        this.roomName = "";
     }
 
     addPlayer(socket) {
