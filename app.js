@@ -14,7 +14,6 @@ const io = new Server(httpServer, {
 
 const maxPlayers = 2;
 const roomNameToGameManager = new Map();
-// const gameManager = new GameManager(maxPlayers);
 
 io.on("connection", (socket) => {
     onJoinRoom(socket);
@@ -34,7 +33,7 @@ const onDisconnect = (socket, roomName) => {
 
 const onJoinRoom = (socket) => {
     socket.on("onJoinRoom", (roomName) => {
-        const gameManager = roomNameToGameManager.get(roomName);
+        let gameManager = roomNameToGameManager.get(roomName);
 
         if (
             gameManager &&
@@ -49,22 +48,22 @@ const onJoinRoom = (socket) => {
                 roomName,
                 new GameManager(maxPlayers, roomName)
             );
+
             gameManager = roomNameToGameManager.get(roomName);
         }
 
-        socket.join(roomName).then(() => {
-            gameManager.addPlayer(socket);
+        socket.join(roomName);
+        gameManager.addPlayer(socket);
 
-            onGetPlayersName(socket);
-            onDisconnect(socket);
-            onCardTakenFromPile(socket);
-            onCardTakeFromDeck(socket);
-            onYaniv(socket);
-        });
+        onGetPlayersName(socket, roomName);
+        onDisconnect(socket, roomName);
+        onCardTakenFromPile(socket, roomName);
+        onCardTakeFromDeck(socket, roomName);
+        onYaniv(socket, roomName);
 
         if (gameManager.playersAmount === gameManager.maxPlayers) {
             setTimeout(() => {
-                onGameStart(socket);
+                onGameStart(socket, roomName);
             }, 100);
         }
     });
@@ -107,6 +106,7 @@ const onCardTakenFromPile = (socket, roomName) => {
             pile: gameManager.pile,
             topPile: gameManager.topPile,
         });
+
         io.to(roomName).emit(
             "onPlayersStateChange",
             gameManager.getPlayersState()

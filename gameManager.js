@@ -10,7 +10,7 @@ class GameManager {
         this.topPile = [];
         this.players = [];
         this.currentPlayerTurn = "";
-        this.roomName = "";
+        this.roomName = roomName;
     }
 
     addPlayer(socket) {
