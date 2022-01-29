@@ -41,6 +41,7 @@ const onJoinRoom = (socket) => {
             gameManager.playersAmount >= gameManager.maxPlayers
         ) {
             console.log("Room is full, client - ", socket.id, "disconnected");
+            socket.emit("onRoomFull", roomName);
             socket.disconnect();
         }
 
