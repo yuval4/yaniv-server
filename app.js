@@ -25,6 +25,7 @@ httpServer.listen(PORT, () => {
 
 const onDisconnect = (socket, roomName) => {
     socket.on("disconnect", (reason) => {
+        const gameManager = roomNameToGameManager.get(roomName);
         socket.broadcast.emit("onClientDisconnect", socket.id);
         io.disconnectSockets();
         gameManager.reset();
