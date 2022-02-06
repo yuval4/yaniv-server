@@ -148,13 +148,15 @@ const onYaniv = (socket, roomName) => {
 
     if (gameManager.calcHandSum(id) <= 7) {
       const minScorePlayer = gameManager.getMinHandScorePlayer();
-
+      // get list on min score and check in not ===
       if (id === minScorePlayer.id) {
+        gameManager.yanivAddScore(id);
         io.to(roomName).emit("onPlayerWin", {
           winner: minScorePlayer,
           state: gameManager.players,
         });
       } else {
+        gameManager.assafAddScore(id);
         io.to(roomName).emit("onAssaf", {
           winner: minScorePlayer,
           state: gameManager.players,

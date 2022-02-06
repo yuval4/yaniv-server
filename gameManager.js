@@ -96,8 +96,26 @@ class GameManager {
     this.topPile = [];
     this.currentPlayerTurn = "";
     this.players.forEach((player) => {
-      const totalScore = this.calcHandSum(player.id) + player.totalScore;
       player.hand = [];
+    });
+  }
+
+  yanivAddScore(winnerId) {
+    this.players.forEach((player) => {
+      if (player.id !== winnerId) {
+        const totalScore = this.calcHandSum(player.id) + player.totalScore;
+        player.totalScore = totalScore;
+      }
+    });
+  }
+
+  assafAddScore(assafFineId) {
+    this.players.forEach((player) => {
+      let totalScore = this.calcHandSum(player.id) + player.totalScore;
+      if (player.id === assafFineId) {
+        totalScore += 30;
+      }
+
       player.totalScore = totalScore;
     });
   }
